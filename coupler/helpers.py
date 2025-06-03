@@ -95,7 +95,8 @@ class FloquetHamiltonian:
 
         for args in tqdm(args_list, desc="Computing Floquet modes"):
             self.args = args  # Update args for each computation
-            self.floquet_basis = qt.FloquetBasis(self.H, self.T, args, options=self.options)
+            T = 2 * np.pi / args['omega'] if 'omega' in args else self.T
+            self.floquet_basis = qt.FloquetBasis(self.H, T, args, options=self.options)
             f_energies, f_modes = self.compute_floquet_modes()
 
             energies_list.append(f_energies)
@@ -194,7 +195,113 @@ class FloquetHamiltonian:
             return filtered_indices, filtered_overlaps
         return filtered_indices
     
-        
+    # given a list of modes, one list for each swept parameter point, find the max overlap of target mode with the list . 
+    # then plot the overlaps as a function of the swept parameter
+    def plot_overlaps_states(self, swept_list, target_states, target_state_labels, modes_swept_list, 
+                             xlabel="Swept Parameter", ylabel='Overlap', find_max=True, find_min=False):
+        """
+        Plot overlaps for multiple target states, each with separate plots.
+
+        Parameters
+        ----------
+        swept_list : list
+            List of swept parameter values.
+        target_states : list of Qobj
+            List of target states to compute overlaps for.
+        target_state_labels : list of str
+            List of labels for the target states.
+        modes_swept_list : list of list of Qobj
+            List of lists of modes corresponding to each swept parameter value.
+        xlabel : str, optional
+            Label for the x-axis. Default is "Swept Parameter".
+        ylabel : str, optional
+            Label for the y-axis. Default is "Overlap".
+        find_max : bool, optional
+            If True, find and mark the maximum overlap. Default is True.
+        find_min : bool, optional
+            If True, find and mark the minimum overlap. Default is False.
+
+        Returns
+        -------
+        results : list of dict
+            List of dictionaries containing swept parameters, overlaps, indices, and max/min indices for each target state.
+        """
+        results = []
+
+        for target_state, target_label in zip(target_states, target_state_labels):
+            overlap_idxs = []
+            overlap_values = []
+            for i in range(len(swept_list)):
+                alice_overlap_indices, alice_overlap = self.find_max_overlap_indices(target_state, modes_swept_list[i], return_overlaps=True)
+                overlap_idxs.append(alice_overlap_indices[0])  # Take the first index (max overlap)
+                overlap_values.append(alice_overlap[0])
+
+            # plt.figure(figsize=(10, 6))
+            fig, ax = plt.subplots(2, 1, figsize=(10, 12))
+
+            # Plot overlaps
+            ax[0].plot(swept_list, overlap_values, marker='o', linestyle='-', color='C0')
+            ax[0].set_xlabel(xlabel)
+            ax[0].set_ylabel(ylabel)
+            ax[0].set_title(f'Max Overlap of Target State ({target_label}) with Swept Modes')
+            ax[0].grid()
+
+            # Plot state indices
+            ax[1].plot(swept_list, overlap_idxs, marker='o', linestyle='-', color='C1')
+            ax[1].set_xlabel(xlabel)
+            ax[1].set_ylabel('State Index')
+            ax[1].set_title(f'State Index of Max Overlap for Target State ({target_label})')
+            ax[1].grid()
+
+            # Highlight max and min overlap points
+            max_overlap_idx = None
+            min_overlap_idx = None
+
+            if find_max:
+                max_overlap_idx = np.argmax(overlap_values)
+                print(f"Max overlap at index {max_overlap_idx}: {overlap_values[max_overlap_idx]} for swept parameter {swept_list[max_overlap_idx]}")
+                ax[0].axvline(x=swept_list[max_overlap_idx], color='r', linestyle='--', label='Max Overlap')
+            if find_min:
+                min_overlap_idx = np.argmin(overlap_values)
+                print(f"Min overlap at index {min_overlap_idx}: {overlap_values[min_overlap_idx]} for swept parameter {swept_list[min_overlap_idx]}")
+                ax[0].axvline(x=swept_list[min_overlap_idx], color='g', linestyle='--', label='Min Overlap')
+
+            ax[0].legend()
+            # plt.tight_layout()
+            # plt.show()
+            # plt.plot(swept_list, overlap_values, marker='o', linestyle='-', color='C0')
+
+            # plt.xlabel(xlabel)
+            # plt.ylabel(ylabel)
+            # plt.title(f'Max Overlap of Target State ({target_label}) with Swept Modes')
+            # plt.grid()
+
+            # max_overlap_idx = None
+            # min_overlap_idx = None
+
+            # if find_max:
+            #     max_overlap_idx = np.argmax(overlap_values)
+            #     print(f"Max overlap at index {max_overlap_idx}: {overlap_values[max_overlap_idx]} for swept parameter {swept_list[max_overlap_idx]}")
+            #     plt.axvline(x=swept_list[max_overlap_idx], color='r', linestyle='--', label='Max Overlap')
+            # if find_min:
+            #     min_overlap_idx = np.argmin(overlap_values)
+            #     print(f"Min overlap at index {min_overlap_idx}: {overlap_values[min_overlap_idx]} for swept parameter {swept_list[min_overlap_idx]}")
+            #     plt.axvline(x=swept_list[min_overlap_idx], color='g', linestyle='--', label='Min Overlap')
+
+            # plt.legend()
+            # plt.tight_layout()
+            # plt.show()
+
+            results.append({
+                'swept_list': swept_list,
+                'overlap_values': overlap_values,
+                'overlap_idxs': overlap_idxs,
+                'max_overlap_idx': max_overlap_idx,
+                'min_overlap_idx': min_overlap_idx
+            })
+
+        return results
+           
 
 
 
@@ -328,18 +435,25 @@ class CouplerHamiltonian:
         c_dag = c.dag()
         return a, a_dag, b, b_dag, c, c_dag
 
-    def generate_H0(self, rotating=False):
+    def generate_H0(self, rotating=False, no_coupling=False):
         if rotating:
             return qt.qeye(self.trunc ** 3)
-            
         
         H = (
             self.omega_A * self.a_dag * self.a
             + self.omega_B * self.b_dag * self.b
             + self.omega_C * self.c_dag * self.c
-            + self.g_AC * (self.a_dag * self.c + self.a * self.c_dag)
-            + self.g_BC * (self.b_dag * self.c + self.b * self.c_dag)
         )
+        if no_coupling:
+            print("No couplings added to Hamiltonian")
+            
+        if not no_coupling:
+            print("Adding couplings to Hamiltonian")
+            H += (
+                self.g_AC * (self.a_dag * self.c + self.a * self.c_dag)
+                + self.g_BC * (self.b_dag * self.c + self.b * self.c_dag)
+            )
+        
         return H
 
     def generate_H0_with_couplings(self, lab = True):
@@ -442,7 +556,7 @@ class CouplerHamiltonian:
 
         def coeff_func(t, args):
             
-            amp = args['phi_AC_amp']
+            amp = args['amp']
             omega = args['omega']
             return np.sin(amp * np.cos(omega * t))
 
@@ -519,7 +633,7 @@ class CouplerHamiltonian:
         """
         self.H0 = self.generate_H0_with_couplings(lab=True)
         operator, time_func = self.linc_potential_operator()
-        H_static = self.H0 + (time_func(0, args={'phi_AC_amp': 0, 'omega': 0}) * operator)
+        H_static = self.H0 + (time_func(0, args={'amp': 0, 'omega': 0}) * operator)
 
         dressed_static_energies, dressed_static_states = self.static_modes(H_static)
         basis_to_dressed_mapping_dict, dressed_to_basis_mapping_dict = self.basis_to_dressed_mapping(dressed_static_states)
@@ -703,378 +817,11 @@ class CouplerHamiltonian:
         return basis_states
 
     
-    def floquet_modes(self,  H, omega, args=None, rotating=False, t = None):
-        """
-        Compute Floquet modes and quasienergies for the time-dependent Hamiltonian.
-        The period T is set to the minimum of the inverse frequency differences.
-
-        Parameters
-        ----------
-        args : dict, optional
-            Arguments for time-dependent coefficients.
-        rotating : bool, optional
-            Whether to use the rotating frame Hamiltonian.
-
-        Returns
-        -------
-        quasienergies : np.ndarray
-            Array of quasienergies.
-        floquet_modes : list of Qobj
-            List of Floquet mode states.
-        """
-        
-        T = 2 * np.pi / omega
-
-        options = qt.Options(nsteps=10000)
-        floquet_basis = qt.FloquetBasis(H, T, args, options=options)
-        f_energies = floquet_basis.e_quasi
-        if t is None:
-            t = T/2
-        f_modes = floquet_basis.mode(t)
-
-        # f_modes_0, f_energies = qt.floquet_modes(H, T, args)
-        # # at later time t 
-        # # if t is None:
-        # #     t = 0
-        # t = T/2
-        # modes = qt.floquet_modes_t(f_modes_0, f_energies, t, H, T, args)
-        return f_energies, f_modes
     
-    def compute_states_over_floquet_period(self, omega, H, num_points=100):
-        """
-        Computes the Floquet states and their corresponding energies over one Floquet period.
-        This method evaluates the Floquet modes and energies at evenly spaced time points
-        within a single period of the driving frequency. It also computes the mapping from
-        Floquet modes to the original basis at each time point.
-        Args:
-            omega (float): The driving frequency.
-            H (callable or np.ndarray): The system Hamiltonian or a function returning the Hamiltonian at time t.
-            num_points (int, optional): Number of time points to sample within one Floquet period. Default is 100.
-        Returns:
-            tuple:
-                energies_list (list of np.ndarray): List of Floquet quasi-energies at each time point.
-                modes_list (list of np.ndarray): List of Floquet modes at each time point.
-                big_mapping_list (list): List of mappings from Floquet modes to the original basis at each time point.
-        """
-        
-
-        T = 2 * np.pi / omega
-        energies_list = []
-        modes_list = []
-        for t in tqdm(np.linspace(0, T, num_points), desc="Computing Floquet states"):
-            energies, modes = self.floquet_modes(omega, H, t=t)
-            energies_list.append(energies)
-            modes_list.append(modes)
-        
-        # get mappings for all the modes
-        # big_mapping_list = [self.floquet_to_basis_mapping(modes) for modes in modes_list]
-        return energies_list, modes_list
-
-    # 
-    # def compute_floquet_and_mappings(self, H, args_list):
-    #     """
-    #     Compute Floquet modes, energies, and mappings for a list of arguments.
-
-    #     Parameters
-    #     ----------
-    #     H : list
-    #         Time-dependent Hamiltonian in Floquet form.
-    #     args_list : list of dict
-    #         List of argument dictionaries, each containing 'phi_AC_amp' and 'omega'.
-
-    #     Returns
-    #     -------
-    #     results : dict
-    #         Dictionary containing:
-    #             - 'args_list': List of argument dictionaries.
-    #             - 'energies': List of Floquet quasienergies for each set of arguments.
-    #             - 'modes': List of Floquet modes for each set of arguments.
-    #             - 'mappings': List of mappings (dressed to Floquet and Floquet to dressed) for each set of arguments.
-    #     """
-    #     energies_list = []
-    #     modes_list = []
-    #     dressed_to_floquet_mapping_list = []
-    #     floquet_to_dressed_mapping_list = []
-
-    #     for args in tqdm(args_list, desc="Computing Floquet modes and mappings"):
-    #         f_energies, f_modes = self.floquet_modes(H, args['omega'], args=args)
-    #         dressed_to_floquet_mapping, floquet_to_dressed_mapping = self.dressed_to_floquet_mapping(f_modes)
-
-    #         energies_list.append(f_energies)
-    #         modes_list.append(f_modes)
-    #         dressed_to_floquet_mapping_list.append(dressed_to_floquet_mapping)
-    #         floquet_to_dressed_mapping_list.append(floquet_to_dressed_mapping)
-
-    #     results = {
-    #         'args_list': args_list,
-    #         'energies': energies_list,
-    #         'modes': modes_list,
-    #         'mappings': {
-    #             'dressed_to_floquet': dressed_to_floquet_mapping_list,
-    #             'floquet_to_dressed': floquet_to_dressed_mapping_list
-    #         }
-    #     }
-    #     return results
-
-    # def sweep_ac_drive_amplitude(self, H, omega, amp_range, num_points=50):
-    #     """
-    #     Sweep the amplitude of the AC drive and compute Floquet modes, energies, and mappings.
-
-    #     Parameters
-    #     ----------
-    #     H : list
-    #         Time-dependent Hamiltonian in Floquet form.
-    #     omega : float
-    #         Floquet drive frequency.
-    #     amp_range : tuple
-    #         Range of amplitudes to sweep (min_amp, max_amp).
-    #     num_points : int, optional
-    #         Number of amplitude points to sample. Default is 50.
-
-    #     Returns
-    #     -------
-    #     results : dict
-    #         Dictionary containing:
-    #             - 'amplitudes': List of amplitudes.
-    #             - 'energies': List of Floquet quasienergies for each amplitude.
-    #             - 'modes': List of Floquet modes for each amplitude.
-    #             - 'mappings': List of mappings (dressed to Floquet and Floquet to dressed) for each amplitude.
-    #     """
-    #     amplitudes = np.linspace(amp_range[0], amp_range[1], num_points)
-    #     args_list = [{'phi_AC_amp': amp, 'omega': omega} for amp in amplitudes]
-    #     results = self.compute_floquet_and_mappings(H, args_list)
-    #     results['amplitudes'] = amplitudes
-    #     return results
-
-    # def sweep_ac_drive_frequency(self, H, amp, freq_range, num_points=50):
-    #     """
-    #     Sweep the frequency of the AC drive and compute Floquet modes, energies, and mappings.
-
-    #     Parameters
-    #     ----------
-    #     H : list
-    #         Time-dependent Hamiltonian in Floquet form.
-    #     amp : float
-    #         Amplitude of the AC drive.
-    #     freq_range : tuple
-    #         Range of frequencies to sweep (min_freq, max_freq).
-    #     num_points : int, optional
-    #         Number of frequency points to sample. Default is 50.
-
-    #     Returns
-    #     -------
-    #     results : dict
-    #         Dictionary containing:
-    #             - 'frequencies': List of frequencies.
-    #             - 'energies': List of Floquet quasienergies for each frequency.
-    #             - 'modes': List of Floquet modes for each frequency.
-    #             - 'mappings': List of mappings (dressed to Floquet and Floquet to dressed) for each frequency.
-    #     """
-    #     frequencies = np.linspace(freq_range[0], freq_range[1], num_points)
-    #     args_list = [{'phi_AC_amp': amp, 'omega': freq} for freq in frequencies]
-    #     results = self.compute_floquet_and_mappings(H, args_list)
-    #     results['frequencies'] = frequencies
-    #     return results
-    # # Sweep the amplitude of the AC drive and compute the Floquet modes and energies.
-    # # for each mode, also store the mapping from dressed states to Floquet states and vice versa
-    # # return the amplitudes, energies, modes, and the mappings in a dictionary
-    # def sweep_ac_drive_amplitude(self, H, omega, amp_range, num_points=50):
-    #     """
-    #     Sweep the amplitude of the AC drive and compute Floquet modes, energies, and mappings.
-
-    #     Parameters
-    #     ----------
-    #     H : list
-    #         Time-dependent Hamiltonian in Floquet form.
-    #     omega : float
-    #         Floquet drive frequency.
-    #     amp_range : tuple
-    #         Range of amplitudes to sweep (min_amp, max_amp).
-    #     num_points : int, optional
-    #         Number of amplitude points to sample. Default is 50.
-
-    #     Returns
-    #     -------
-    #     results : dict
-    #         Dictionary containing:
-    #             - 'amplitudes': List of amplitudes.
-    #             - 'energies': List of Floquet quasienergies for each amplitude.
-    #             - 'modes': List of Floquet modes for each amplitude.
-    #             - 'mappings': List of mappings (dressed to Floquet and Floquet to dressed) for each amplitude.
-    #     """
-    #     amplitudes = np.linspace(amp_range[0], amp_range[1], num_points)
-    #     energies_list = []
-    #     modes_list = []
-    #     dressed_to_floquet_mapping_list = []
-    #     floquet_to_dressed_mapping_list = []
-
-    #     for amp in tqdm(amplitudes, desc="Sweeping AC drive amplitude"):
-    #         args = {'phi_AC_amp': amp, 'omega': omega}
-    #         f_energies, f_modes = self.floquet_modes(H, omega, args=args)
-    #         dressed_to_floquet_mapping, floquet_to_dressed_mapping = self.dressed_to_floquet_mapping(f_modes)
-
-    #         energies_list.append(f_energies)
-    #         modes_list.append(f_modes)
-    #         dressed_to_floquet_mapping_list.append(dressed_to_floquet_mapping)
-    #         floquet_to_dressed_mapping_list.append(floquet_to_dressed_mapping)
-
-    #     results = {
-    #         'amplitudes': amplitudes,
-    #         'energies': energies_list,
-    #         'modes': modes_list,
-    #         'mappings': {
-    #             'dressed_to_floquet': dressed_to_floquet_mapping_list,
-    #             'floquet_to_dressed': floquet_to_dressed_mapping_list
-    #         }
-    #     }
-    #     return results
-
-    # def plot_floquet_energies_over_period(self, energies_list, modes_list, max_photons_per_mode=2, ax=None):
-    #     """
-    #     Plot the Floquet quasienergies for each basis state over time.
-
-    #     Parameters
-    #     ----------
-    #     en_for_state : np.ndarray
-    #         2D array of shape (num_states, num_points) with energies for each state over time.
-    #     max_photons_per_mode : int, optional
-    #         Maximum number of photons allowed per mode for a state to be plotted.
-    #     ax : matplotlib.axes.Axes, optional
-    #         Axis to plot on. If None, creates a new figure and axis.
-    #     """
-    #     import matplotlib.pyplot as plt
-
-    #     num_points, num_states = np.shape(energies_list)
-        
-    #     if ax is None:
-    #         fig, ax = plt.subplots()
-        
-    #     big_mapping_list = [self.floquet_to_basis_mapping(modes) for modes in modes_list]
-    #     state_idxs = list(big_mapping_list[0].keys())
-    #     en_for_state = np.zeros(( num_states, num_points))
-    #     for j, key in enumerate(state_idxs):
-    #         print(big_mapping_list[0][key])
-    #         en_for_state[j, :] = [energies_list[i][big_mapping_list[i][key]] for i in range(num_points)]
-        
-    #     # kets = self.convert_basis_index_list_to_ket_list(big_mapping_list[0].keys())
-
-    #     for j in state_idxs:
-    #         n_A = j // (self.trunc ** 2)
-    #         n_B = (j // self.trunc) % self.trunc
-    #         n_C = j % self.trunc
-    #         if max_photons_per_mode is not None and (n_A > max_photons_per_mode or n_B > max_photons_per_mode or n_C > max_photons_per_mode):
-    #             continue
-    #         label = self.basis_index_to_ket(j)
-    #         ax.plot(range(num_points), en_for_state[j, :], label=label)
-
-    #     ax.set_xlabel('Time Index')
-    #     ax.set_ylabel('Quasienergy')
-    #     ax.set_title('Floquet Quasienergies Over Time')
-    #     ax.legend(fontsize=8, loc='best', ncol=2)
-    #     plt.tight_layout()
-    #     plt.show()
     
-    # def plot_floquet_energies(self, floquet_states, quasienergies, ax=None, max_photons_per_mode=2):
-    #     """
-    #     Plot quasienergies of Floquet states with text labels indicating their basis states.
+   
 
-    #     Parameters
-    #     ----------
-    #     floquet_states : list of Qobj
-    #         List of Floquet mode states (Qobj) to plot.
-    #     quasienergies : list or np.ndarray
-    #         Quasienergies corresponding to each Floquet state.
-    #     ax : matplotlib.axes.Axes, optional
-    #         Axis to plot on. If None, creates a new figure and axis.
-    #     max_photons_per_mode : int or None, optional
-    #         If set, ignore states where any mode has more than this number of photons.
-    #     """
-    #     import matplotlib.pyplot as plt
-
-    #     if ax is None:
-    #         fig, ax = plt.subplots()
-
-    #     # Use the mapping from Floquet state index to basis state index
-    #     mapping = self.floquet_to_basis_mapping(floquet_states)
-
-    #     for i, energy in enumerate(quasienergies):
-    #         basis_idx = mapping[i]
-    #         n_A = basis_idx // (self.trunc ** 2)
-    #         n_B = (basis_idx // self.trunc) % self.trunc
-    #         n_C = basis_idx % self.trunc
-    #         if max_photons_per_mode is not None and (n_A > max_photons_per_mode or n_B > max_photons_per_mode or n_C > max_photons_per_mode):
-    #             continue
-    #         label = self.basis_index_to_ket(basis_idx)
-    #         ax.plot(i, energy, 'o', color='C0')
-    #         ax.text(i, energy, label, ha='center', va='bottom', fontsize=9, rotation=90)
-
-    #     ax.set_xlabel('Floquet State Index')
-    #     ax.set_ylabel('Quasienergy')
-    #     ax.set_title('Floquet Quasienergies with Basis Labels')
-    #     plt.tight_layout()
-    #     plt.show()
-
-
-    # def floquet_to_basis_mapping(self, floquet_states):
-    #     """
-    #     Create a dictionary mapping Floquet states to original basis states
-    #     based on the largest overlap.
-
-    #     Parameters
-    #     ----------
-    #     floquet_states : list of Qobj
-    #         List of Floquet mode states.
-
-    #     Returns
-    #     -------
-    #     mapping : dict
-    #         Dictionary mapping Floquet state index to basis state index.
-    #     """
-    #     # Construct computational basis states
-    #     dim = self.trunc
-    #     basis_states = []
-    #     for dim_a in range(self.trunc):
-    #         for dim_b in range(self.trunc):
-    #             for dim_c in range(self.trunc):
-    #                 state = qt.tensor(
-    #                     qt.basis(dim, dim_a),
-    #                     qt.basis(dim, dim_b),
-    #                     qt.basis(dim, dim_c)
-    #                 )
-    #                 basis_states.append(state)
-    #     mapping = {}
-    #     for i, floquet_state in enumerate(floquet_states):
-    #         overlaps = [np.abs(basis.overlap(floquet_state)**2) for basis in basis_states]
-    #         max_idx = int(np.argmax(overlaps))
-    #         mapping[i] = max_idx
-    #     return mapping
-
-    # given a state and list of states, find the index of state with maximum overlap, 
-    # if there are multiple above a threshold say 0.9, returna list of indices ordered from largest to smallest overlap
-    def find_max_overlap_indices(self, state, state_list, threshold=0.0):
-        """
-        Given a state and a list of states, find the indices of states in the list
-        with the maximum overlap above a given threshold.
-
-        Parameters
-        ----------
-        state : Qobj
-            The state to compare.
-        state_list : list of Qobj
-            List of states to compare against.
-        threshold : float, optional
-            Minimum overlap threshold to consider. Default is 0.9.
-
-        Returns
-        -------
-        indices : list of int
-            List of indices of states in state_list with overlap above the threshold,
-            ordered from largest to smallest overlap.
-        """
-        overlaps = [np.abs(state.overlap(other_state)**2) for other_state in state_list]
-        sorted_indices = np.argsort(overlaps)[::-1]  # Sort indices by descending overlap
-        filtered_indices = [idx for idx in sorted_indices if overlaps[idx] >= threshold]
-        return filtered_indices
+    
     def convert_basis_index_list_to_ket_list(self, indices):
         """
         Given a list of basis state indices, return a list of their ket string representations.
