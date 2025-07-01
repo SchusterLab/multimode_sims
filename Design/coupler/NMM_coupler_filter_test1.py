@@ -17,92 +17,92 @@ import csv
 import matplotlib as mpl
 import datetime as dt
 
-plt.close('all')
 
-# CHIPNAME = "UC"  # dt.datetime.today().strftime("%Y%m%d") #+ "ParaAmp"
-today = time.strftime('%Y%m%d')
-author = ''
+class MMChipsBase(): 
+    """
+    author: Eesh Gupta
+    This class is base class for designing 3D chips. 
+    """
+    def __init__(self):
+        # self.Q = 1000
+        # self.radius = 50
+        # self.segments = 6
+        # self.pinw_rsn = 2.  # this is the resonator pinwitdth that we are going to use.
+        # self.gapw_rsn = 8.5
+        # self.pinw = 1.5  # d.pinw
+        # self.gapw = 1.
+        # self.center_gapw = 1
+        # self.imp_rsn = 80.  # calculate_impedance(d.pinw_rsn,d.gapw_rsn,d.eps_eff)
+        # self.solid = True
+        pass
 
-# Only change these two variables!!
-pad_layer = 1
-junction_layer = 0
-global shorting_layer
-shorting_layer = 0   #  0 junction pattern only, 1 shorting line pattern only
+    def curve_corner(self, structure, xpos, ypos, radius, type):
+        '''
+        Corner type: 0:left top, 1:right top, 2:right bottom, 3:left bottom
+        xpos, ypos: starting  position of the corner
+        '''
+        c2 = structure
+        ref_pos = c2.last
+        ref_direction = c2.last_direction
+        square = 0
+       
 
-# I don't know why it works...
-if pad_layer == 1 and junction_layer == 0:
-    draw_layer1 = 1
-    draw_layer2 = 0
-    draw_layer3 = 1
-
-if junction_layer == 1 and pad_layer == 0:
-    draw_layer1 = 0
-    draw_layer2 = 1
-    draw_layer3 = 1
-
-if pad_layer == 1 and junction_layer == 1:
-    draw_layer1 = 1
-    draw_layer2 = 1
-    draw_layer3 = 1
-
-show_structure = 0
-show_wafer = 1
-two_layer = 1
-perf = False
-solid = 0
-square = 0
-etching = True  # False if a bare wafer is used
-open_dwgviewer = False
-open_klayout = True
-
-if draw_layer1 == 1:
-    MaskName = ""
-else:
-    MaskName = " "  # MaskName not needed for junction mask
-
-if draw_layer1 == 1 and draw_layer2 == 0:
-    two_layer = 0
-elif draw_layer1 == 0 and draw_layer3 == 1:
-    two_layer = 0
-else:
-    two_layer = 1
-
-if junction_layer == 1:
-    two_layer = 1
-# Don't change anything above!
-
-### CPW Parameters
-cpw_length = 10
-cpw_pinw = 10.0
-cpw_rad = 50
-taperl = 50
-eps_eff = (1. + 10.4) / 2.
-cpw_gapw = calculate_gap_width(eps_eff, 50, cpw_pinw)
-flux_pinw = 3.5
-flux_gapw = calculate_gap_width(eps_eff, 50, flux_pinw) + 0.21
-
-# print(calculate_gap_width(eps_eff, 50, 6))
-### JPA capacitor parameters
-cap_botm_y = 40
-cap_botm_x = 140
-cap_top_y = 120
-cap_top_x = 80
-cap_sep = 11
-con_pin_l = 50.
-
-junc_pad_y = 6.5
-
-print(cpw_gapw)
-
-chip_names = list()
-chanstarts = list()
-
-### Close DWG Viewer & KLayout
-if open_dwgviewer:
-    subprocess.Popen(r'taskkill /F /im "dwgviewr.exe"')
-if open_klayout:
-    subprocess.Popen(r'taskkill /F /im "klayout_app.exe"')
-
+        c2.last = (xpos, ypos)
+        if type == 0:
+            c2.last_direction = 0
+            c2.move(radius / 2)
+            c2.last_direction = 90
+            CPWStraight(c2, radius, pinw=0, gapw=radius / 2)
+            c2.last = (xpos, ypos)
+            c2.last_direction = 0
+            c2.move(radius / 2)
+            c2.last_direction = 90
+            c2.move(radius)
+            c2.last_direction = 270
+            CPWBendNew(c2, angle=90, pinw=0, gapw=radius / 2, radius=radius / 2, polyarc=1, segments=4,
+                    square=square)
+        if type == 1:
+            c2.last_direction = 180
+            c2.move(radius / 2)
+            c2.last_direction = 90
+            CPWStraight(c2, radius, pinw=0, gapw=radius / 2)
+            c2.last = (xpos, ypos)
+            c2.last_direction = 180
+            c2.move(radius / 2)
+            c2.last_direction = 90
+            c2.move(radius)
+            c2.last_direction = 270
+            CPWBendNew(c2, angle=-90, pinw=0, gapw=radius / 2, radius=radius / 2, polyarc=1, segments=4,
+                    square=square)
+        if type == 2:
+            c2.last_direction = 180
+            c2.move(radius / 2)
+            c2.last_direction = 270
+            CPWStraight(c2, radius, pinw=0, gapw=radius / 2)
+            c2.last = (xpos, ypos)
+            c2.last_direction = 180
+            c2.move(radius / 2)
+            c2.last_direction = 270
+            c2.move(radius)
+            c2.last_direction = 90
+            CPWBendNew(c2, angle=90, pinw=0, gapw=radius / 2, radius=radius / 2, polyarc=1, segments=4,
+                    square=square)
+        if type == 3:
+            c2.last_direction = 0
+            c2.move(radius / 2)
+            c2.last_direction = 270
+            CPWStraight(c2, radius, pinw=0, gapw=radius / 2)
+            c2.last = (xpos, ypos)
+            c2.last_direction = 0
+            c2.move(radius / 2)
+            c2.last_direction = 270
+            c2.move(radius)
+            c2.last_direction = 90
+            CPWBendNew(c2, angle=-90, pinw=0, gapw=radius / 2, radius=radius / 2, polyarc=1, segments=4,
+                    square=square)
+        ########################################
+        c2.last_direction = ref_direction
+        c2.last = ref_pos
 
 def set_mask_init():
     ### Setting defaults
@@ -168,199 +168,6 @@ def draw_launchers(c, d, exclude=[]):
                          launcher_gapw=150)
 
 
-def cover_launchers(c, d, exclude=[], h=500, w=400):
-    """
-    Cover the launchers with a square so that we can wirebond to the pads on the chip.
-    """
-
-    # taper_length = 250
-    # taper_to_width = 2 * 50 + 20
-    #
-    # s = Structure(c, start=c.top_midpt, direction=270, defaults=d)
-    #
-    # if not (1 in exclude):  # middle, top
-    #     lo_left = (c.top_midpt[0] - w / 2., c.top_midpt[1] - (h - taper_length))
-    #     lo_right = (c.top_midpt[0] + w / 2., c.top_midpt[1] - (h - taper_length))
-    #     tp_left = (c.top_midpt[0] - w / 2., c.top_midpt[1])
-    #     tp_right = (c.top_midpt[0] + w / 2., c.top_midpt[1])
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, tp_left, tp_right, lo_right, lo_left]))
-    #
-    #     tp_left = lo_left
-    #     tp_right = lo_right
-    #     midx = (lo_left[0] + lo_right[0]) / 2.
-    #     midy = tp_left[1] - taper_length
-    #     lo_left = (midx - taper_to_width / 2., midy)
-    #     lo_right = (midx + taper_to_width / 2., midy)
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, tp_left, tp_right, lo_right, lo_left]))
-    #
-    # if not (2 in exclude):  # middle, bottom
-    #     lo_left = (c.bottom_midpt[0] - w / 2., c.bottom_midpt[1])
-    #     lo_right = (c.bottom_midpt[0] + w / 2., c.bottom_midpt[1])
-    #     tp_left = (c.bottom_midpt[0] - w / 2., c.bottom_midpt[1] + (h - taper_length))
-    #     tp_right = (c.bottom_midpt[0] + w / 2., c.bottom_midpt[1] + (h - taper_length))
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, lo_right, tp_right, tp_left, lo_left]))
-    #
-    #     lo_left = tp_left
-    #     lo_right = tp_right
-    #     midx = (lo_left[0] + lo_right[0]) / 2.
-    #     midy = tp_left[1] + taper_length
-    #     tp_left = (midx - taper_to_width / 2., midy)
-    #     tp_right = (midx + taper_to_width / 2., midy)
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, tp_left, tp_right, lo_right, lo_left]))
-    #
-    # if not (3 in exclude):  # Left, middle
-    #     lo_left = (c.left_midpt[0], c.left_midpt[1] - w / 2.)
-    #     lo_right = (c.left_midpt[0] + (h - taper_length), c.left_midpt[1] - w / 2.)
-    #     tp_left = (c.left_midpt[0], c.left_midpt[1] + w / 2.)
-    #     tp_right = (c.left_midpt[0] + (h - taper_length), c.left_midpt[1] + w / 2.)
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, lo_right, tp_right, tp_left, lo_left]))
-    #
-    #     lo_left = lo_right
-    #     tp_left = tp_right
-    #     midx = tp_left[0] + taper_length
-    #     midy = (lo_left[1] + tp_left[1]) / 2.
-    #     tp_right = (midx, midy + taper_to_width / 2.)
-    #     lo_right = (midx, midy - taper_to_width / 2.)
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, tp_left, tp_right, lo_right, lo_left]))
-    #
-    # if not (4 in exclude):  # Right, middle
-    #     lo_left = (c.right_midpt[0] - (h - taper_length), c.right_midpt[1] - w / 2.)
-    #     lo_right = (c.right_midpt[0], c.right_midpt[1] - w / 2.)
-    #     tp_left = (c.right_midpt[0] - (h - taper_length), c.right_midpt[1] + w / 2.)
-    #     tp_right = (c.right_midpt[0], c.right_midpt[1] + w / 2.)
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, lo_right, tp_right, tp_left, lo_left]))
-    #
-    #     lo_right = lo_left
-    #     tp_right = tp_left
-    #     midx = tp_left[0] - taper_length
-    #     midy = (lo_left[1] + tp_left[1]) / 2.
-    #     tp_left = (midx, midy + taper_to_width / 2.)
-    #     lo_left = (midx, midy - taper_to_width / 2.)
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, tp_left, tp_right, lo_right, lo_left]))
-    #
-    # if not (5 in exclude):  # Top, left
-    #     lo_left = (c.top_left[0] - w / 2., c.top_left[1] - (h - taper_length))
-    #     lo_right = (c.top_left[0] + w / 2., c.top_left[1] - (h - taper_length))
-    #     tp_left = (c.top_left[0] - w / 2., c.top_left[1])
-    #     tp_right = (c.top_left[0] + w / 2., c.top_left[1])
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, lo_right, tp_right, tp_left, lo_left]))
-    #
-    #     tp_left = lo_left
-    #     tp_right = lo_right
-    #     midx = (lo_left[0] + lo_right[0]) / 2.
-    #     midy = tp_left[1] - taper_length
-    #     lo_left = (midx - taper_to_width / 2., midy)
-    #     lo_right = (midx + taper_to_width / 2., midy)
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, tp_left, tp_right, lo_right, lo_left]))
-    #
-    # if not (6 in exclude):  # Top, right
-    #     lo_left = (c.top_right[0] - w / 2., c.top_right[1] - (h - taper_length))
-    #     lo_right = (c.top_right[0] + w / 2., c.top_right[1] - (h - taper_length))
-    #     tp_left = (c.top_right[0] - w / 2., c.top_right[1])
-    #     tp_right = (c.top_right[0] + w / 2., c.top_right[1])
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, lo_right, tp_right, tp_left, lo_left]))
-    #
-    #     tp_left = lo_left
-    #     tp_right = lo_right
-    #     midx = (lo_left[0] + lo_right[0]) / 2.
-    #     midy = tp_left[1] - taper_length
-    #     lo_left = (midx - taper_to_width / 2., midy)
-    #     lo_right = (midx + taper_to_width / 2., midy)
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, tp_left, tp_right, lo_right, lo_left]))
-    #
-    # if not (7 in exclude):  # Bottom, left
-    #     lo_left = (c.bottom_left[0] - w / 2., c.bottom_left[1])
-    #     lo_right = (c.bottom_left[0] + w / 2., c.bottom_left[1])
-    #     tp_left = (c.bottom_left[0] - w / 2., c.bottom_left[1] + (h - taper_length))
-    #     tp_right = (c.bottom_left[0] + w / 2., c.bottom_left[1] + (h - taper_length))
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, lo_right, tp_right, tp_left, lo_left]))
-    #
-    #     lo_left = tp_left
-    #     lo_right = tp_right
-    #     midx = (lo_left[0] + lo_right[0]) / 2.
-    #     midy = tp_left[1] + taper_length
-    #     tp_left = (midx - taper_to_width / 2., midy)
-    #     tp_right = (midx + taper_to_width / 2., midy)
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, tp_left, tp_right, lo_right, lo_left]))
-    #
-    # if not (8 in exclude):  # Bottom, right
-    #     lo_left = (c.bottom_right[0] - w / 2., c.bottom_right[1])
-    #     lo_right = (c.bottom_right[0] + w / 2., c.bottom_right[1])
-    #     tp_left = (c.bottom_right[0] - w / 2., c.bottom_right[1] + (h - taper_length))
-    #     tp_right = (c.bottom_right[0] + w / 2., c.bottom_right[1] + (h - taper_length))
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, lo_right, tp_right, tp_left, lo_left]))
-    #
-    #     lo_left = tp_left
-    #     lo_right = tp_right
-    #     midx = (lo_left[0] + lo_right[0]) / 2.
-    #     midy = tp_left[1] + taper_length
-    #     tp_left = (midx - taper_to_width / 2., midy)
-    #     tp_right = (midx + taper_to_width / 2., midy)
-    #
-    #     if solid:
-    #         s.append(sdxf.Solid([lo_left, lo_right, tp_right, tp_left]))
-    #     else:
-    #         s.append(sdxf.PolyLine([lo_left, tp_left, tp_right, lo_right, lo_left]))
 
 
 def draw_chip_alignment_marks(solid, d, c):
@@ -559,77 +366,7 @@ def CPWBendNew(structure, angle=90, pinw=10.0, gapw=20.0, radius=50.0, polyarc=1
         print("this angle is not supported")
 
 
-def curve_corner(structure, xpos, ypos, radius, type):
-    c2 = structure
-    ref_pos = c2.last
-    ref_direction = c2.last_direction
-    square = 0
-    ########################################
-    # Corner type: 0:left top, 1:right top, 2:right bottom, 3:left bottom
-    #
-    #
-    #  1#0
-    #################
-    #  2#3
-    #
-    #
-    # starting position at corner
-    c2.last = (xpos, ypos)
-    if type == 0:
-        c2.last_direction = 0
-        c2.move(radius / 2)
-        c2.last_direction = 90
-        CPWStraight(c2, radius, pinw=0, gapw=radius / 2)
-        c2.last = (xpos, ypos)
-        c2.last_direction = 0
-        c2.move(radius / 2)
-        c2.last_direction = 90
-        c2.move(radius)
-        c2.last_direction = 270
-        CPWBendNew(c2, angle=90, pinw=0, gapw=radius / 2, radius=radius / 2, polyarc=1, segments=4,
-                   square=square)
-    if type == 1:
-        c2.last_direction = 180
-        c2.move(radius / 2)
-        c2.last_direction = 90
-        CPWStraight(c2, radius, pinw=0, gapw=radius / 2)
-        c2.last = (xpos, ypos)
-        c2.last_direction = 180
-        c2.move(radius / 2)
-        c2.last_direction = 90
-        c2.move(radius)
-        c2.last_direction = 270
-        CPWBendNew(c2, angle=-90, pinw=0, gapw=radius / 2, radius=radius / 2, polyarc=1, segments=4,
-                   square=square)
-    if type == 2:
-        c2.last_direction = 180
-        c2.move(radius / 2)
-        c2.last_direction = 270
-        CPWStraight(c2, radius, pinw=0, gapw=radius / 2)
-        c2.last = (xpos, ypos)
-        c2.last_direction = 180
-        c2.move(radius / 2)
-        c2.last_direction = 270
-        c2.move(radius)
-        c2.last_direction = 90
-        CPWBendNew(c2, angle=90, pinw=0, gapw=radius / 2, radius=radius / 2, polyarc=1, segments=4,
-                   square=square)
-    if type == 3:
-        c2.last_direction = 0
-        c2.move(radius / 2)
-        c2.last_direction = 270
-        CPWStraight(c2, radius, pinw=0, gapw=radius / 2)
-        c2.last = (xpos, ypos)
-        c2.last_direction = 0
-        c2.move(radius / 2)
-        c2.last_direction = 270
-        c2.move(radius)
-        c2.last_direction = 90
-        CPWBendNew(c2, angle=-90, pinw=0, gapw=radius / 2, radius=radius / 2, polyarc=1, segments=4,
-                   square=square)
-    ########################################
-    c2.last_direction = ref_direction
-    c2.last = ref_pos
+
 
 
 def perforate(chip, grid_x, grid_y):
