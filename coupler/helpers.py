@@ -26,7 +26,7 @@ class FloquetHamiltonian:
             T = 2 * np.pi / args['omega']
         self.args = args
         self.options = qt.Options(nsteps=10000)
-        self.floquet_basis = qt.FloquetBasis(H, T, args, options=self.options)
+        # self.floquet_basis = qt.FloquetBasis(H, T, args, options=self.options)
 
     def compute_floquet_modes(self, t=0):
         """
@@ -44,6 +44,7 @@ class FloquetHamiltonian:
         floquet_modes : list of Qobj
             List of Floquet mode states.
         """
+        # self.floquet_basis = qt.FloquetBasis(H, T, args, options=self.options)
         quasienergies = self.floquet_basis.e_quasi
         floquet_modes = self.floquet_basis.mode(t)
         return quasienergies, floquet_modes
@@ -450,8 +451,8 @@ class CouplerHamiltonian:
         if not no_coupling:
             print("Adding couplings to Hamiltonian")
             H += (
-                self.g_AC * (self.a_dag * self.c + self.a * self.c_dag)
-                + self.g_BC * (self.b_dag * self.c + self.b * self.c_dag)
+                self.g_AC * (self.a_dag - self.a) * (self.c_dag - self.c)
+                + self.g_BC * (self.b_dag - self.b) * (self.c_dag - self.c)
             )
         
         return H
@@ -874,4 +875,288 @@ class CouplerHamiltonian:
         nums = ket_str.strip('|>').split(',')
         n_A, n_B, n_C = map(int, nums)
         return n_A * (self.trunc ** 2) + n_B * self.trunc + n_C
-   
+    # ---------------------Finding effective g between states---------------------
+    # Compute Floquet modes and energies, use either dressed states to idenitfy alice bob or floquet driven uncoupled states 
+    def calculate_coupled_uncoupled_dressed_overlaps_and_energies(self, floquet_class_uncoup, floquet_class_coup,  return_args_uncoup, return_args_coup, state_label):
+        """
+        Calculates the overlaps and energies between a specified state in the coupled system and corresponding states in both uncoupled and dressed bases across a set of frequencies.
+        For each frequency, this method:
+            - Finds the overlap and energy of the coupled state with the closest uncoupled state.
+            - Finds the overlap and energy of the coupled state with the closest dressed state.
+        Args:
+            floquet_class_uncoup: An instance representing the uncoupled Floquet system, providing methods to find overlaps.
+            floquet_class_coup: An instance representing the coupled Floquet system, providing methods to find overlaps.
+            return_args_uncoup (dict): Dictionary containing results for the uncoupled system, including 'modes' and other relevant data.
+            return_args_coup (dict): Dictionary containing results for the coupled system, including 'modes', 'energies', and 'frequencies'.
+            state_label: Label or identifier for the state of interest in the coupled system.
+        Returns:
+            tuple: A tuple containing four lists:
+                - overlaps_coup_with_uncoupled (list): Overlaps of the coupled state with the closest uncoupled states for each frequency.
+                - energies_coup_with_uncoupled (list): Energies of the closest uncoupled states for each frequency.
+                - overlaps_coup_with_dressed (list): Overlaps of the coupled state with the closest dressed states for each frequency.
+                - energies_coup_with_dressed (list): Energies of the closest dressed states for each frequency.
+        """
+        
+        overlaps_coup_with_uncoupled = []
+        energies_coup_with_uncoupled = []
+        overlaps_coup_with_dressed = []
+        energies_coup_with_dressed = []
+        coup_ham = self
+
+        for idx, freq in enumerate(return_args_coup['frequencies']):
+            state = coup_ham.basis_states[coup_ham.ket_to_basis_index(state_label)]
+
+            # Find the state in the uncoupled modes
+            overlap_idxs, overlaps = floquet_class_uncoup.find_max_overlap_indices(
+                state, return_args_uncoup['modes'][idx], return_overlaps=True
+            )
+            driven_uncoupled_state = return_args_uncoup['modes'][idx][overlap_idxs[0]]
+
+            # Find the states in driven coupled modes closest to the uncoupled states
+            overlap_idxs, overlaps = floquet_class_coup.find_max_overlap_indices(
+                driven_uncoupled_state, return_args_coup['modes'][idx], return_overlaps=True
+            )
+            overlaps_coup_with_uncoupled.append(overlaps[0])
+            energies_coup_with_uncoupled.append(return_args_coup['energies'][idx][overlap_idxs[0]])
+
+            # Find the states in driven coupled modes closest to the dressed states
+            overlap_idxs, overlaps = floquet_class_coup.find_max_overlap_indices(
+                coup_ham.dressed_states[coup_ham.basis_to_dressed_mapping_dict[coup_ham.ket_to_basis_index(state_label)]],
+                return_args_coup['modes'][idx],
+                return_overlaps=True
+            )
+            overlaps_coup_with_dressed.append(overlaps[0])
+            energies_coup_with_dressed.append(return_args_coup['energies'][idx][overlap_idxs[0]])
+            results = {
+                'overlaps_coup_with_uncoupled': overlaps_coup_with_uncoupled,
+                'energies_coup_with_uncoupled': energies_coup_with_uncoupled,
+                'overlaps_coup_with_dressed': overlaps_coup_with_dressed,
+                'energies_coup_with_dressed': energies_coup_with_dressed
+            }
+        return results
+    
+    def plot_coupled_uncoupled_dressed_overlaps_and_energies(self,return_args_coup, 
+                                                                 alice_results, 
+                                                                 bob_results, 
+                                                                 freq_unit=2 * np.pi, 
+                                                                 energy_unit=2*np.pi):
+        """
+        Plot energies and overlaps for Alice and Bob with uncoupled and dressed states.
+
+        Parameters
+        ----------
+        return_args_coup : dict
+            Dictionary containing 'frequencies' (array of drive frequencies).
+        alice_results : dict
+            Dictionary with keys 'overlaps_coup_with_uncoupled', 'energies_coup_with_uncoupled',
+            'overlaps_coup_with_dressed', 'energies_coup_with_dressed' for Alice.
+        bob_results : dict
+            Same as alice_results, but for Bob.
+        freq_unit : float, optional
+            Unit to divide frequencies by for plotting (default: 1e6 for MHz).
+        energy_unit : float, optional
+            Unit to divide energies by for plotting (default: 1e6 for MHz).
+        """
+        import matplotlib.pyplot as plt
+
+        freqs = np.array(return_args_coup['frequencies']) / freq_unit
+
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+
+        # Plot energies
+        ax1.plot(freqs, np.array(alice_results['energies_coup_with_uncoupled']) / energy_unit, 'o-', label='Alice Energies with Uncoupled States')
+        ax1.plot(freqs, np.array(alice_results['energies_coup_with_dressed']) / energy_unit, 'o-', label='Alice Energies with Dressed States')
+        ax1.plot(freqs, np.array(bob_results['energies_coup_with_uncoupled']) / energy_unit, 'o-', label='Bob Energies with Uncoupled States')
+        ax1.plot(freqs, np.array(bob_results['energies_coup_with_dressed']) / energy_unit, 'o-', label='Bob Energies with Dressed States')
+        ax1.set_xlabel('Drive Frequency (MHz)')
+        ax1.set_ylabel('Energy (MHz)')
+        ax1.legend()
+        ax1.grid()
+
+        # Plot overlaps
+        ax2.plot(freqs, alice_results['overlaps_coup_with_uncoupled'], 'o-', label='Alice Overlaps with Uncoupled States')
+        ax2.plot(freqs, alice_results['overlaps_coup_with_dressed'], 'o-', label='Alice Overlaps with Dressed States')
+        ax2.plot(freqs, bob_results['overlaps_coup_with_uncoupled'], 'o-', label='Bob Overlaps with Uncoupled States')
+        ax2.plot(freqs, bob_results['overlaps_coup_with_dressed'], 'o-', label='Bob Overlaps with Dressed States')
+        # draw a vertical line where alice uncoupled has minima
+        min_idx = np.argmin(alice_results['overlaps_coup_with_uncoupled'])
+        min_freq = freqs[min_idx]
+        ax2.axvline(min_freq, color='k', linestyle='--', label='Alice Min Overlap')
+        ax2.set_xlabel('Drive Frequency (MHz)')
+        ax2.set_ylabel('Overlap')
+        ax2.legend()
+        ax2.grid()
+
+        plt.tight_layout()
+        plt.show()
+        return min_freq, min_idx
+    
+    def calculate_overlaps_and_energies_plus_minus(self, floquet_class_uncoup, floquet_class_coup, return_args_uncoup, return_args_coup, state_label_alice, state_label_bob):
+        """
+        Calculates the overlaps and energies of the symmetric (plus) and antisymmetric (minus) combinations 
+        of two quantum states (Alice and Bob) in both uncoupled and coupled Floquet systems.
+        For each frequency in the coupled system, this method:
+            - Identifies the basis states for Alice and Bob.
+            - Finds the closest matching states in the uncoupled Floquet modes.
+            - Constructs symmetric (plus) and antisymmetric (minus) superpositions of these states.
+            - Computes overlaps and energies for these superpositions with respect to both the uncoupled and dressed (bare) states in the coupled system.
+        Args:
+            floquet_class_uncoup: An instance of the Floquet class for the uncoupled system, providing methods to find overlaps.
+            floquet_class_coup: An instance of the Floquet class for the coupled system, providing methods to find overlaps.
+            return_args_uncoup (dict): Dictionary containing results from the uncoupled Floquet calculation, 
+                including 'modes' (list of mode arrays) and other relevant data.
+            return_args_coup (dict): Dictionary containing results from the coupled Floquet calculation, 
+                including 'modes' (list of mode arrays), 'energies' (list of energy arrays), and 'frequencies'.
+            state_label_alice: Label or index identifying Alice's state in the basis.
+            state_label_bob: Label or index identifying Bob's state in the basis.
+        Returns:
+            dict: A dictionary with the following keys, each containing a list (one entry per frequency):
+                - 'plus_overlaps_coup_with_uncoupled': Overlaps of the coupled plus state with the uncoupled plus state.
+                - 'plus_energies_coup_with_uncoupled': Energies of the coupled plus state closest to the uncoupled plus state.
+                - 'plus_overlaps_coup_with_dressed': Overlaps of the coupled plus state with the dressed plus state.
+                - 'plus_energies_coup_with_dressed': Energies of the coupled plus state closest to the dressed plus state.
+                - 'minus_overlaps_coup_with_uncoupled': Overlaps of the coupled minus state with the uncoupled minus state.
+                - 'minus_energies_coup_with_uncoupled': Energies of the coupled minus state closest to the uncoupled minus state.
+                - 'minus_overlaps_coup_with_dressed': Overlaps of the coupled minus state with the dressed minus state.
+                - 'minus_energies_coup_with_dressed': Energies of the coupled minus state closest to the dressed minus state.
+        """
+        
+        coup_ham = self
+        plus_overlaps_coup_with_uncoupled = []
+        plus_energies_coup_with_uncoupled = []
+        plus_overlaps_coup_with_dressed = []
+        plus_energies_coup_with_dressed = []
+
+        minus_overlaps_coup_with_uncoupled = []
+        minus_energies_coup_with_uncoupled = []
+        minus_overlaps_coup_with_dressed = []
+        minus_energies_coup_with_dressed = []
+
+
+
+        for idx, freq in enumerate(return_args_coup['frequencies']):
+            alice_state = coup_ham.basis_states[coup_ham.ket_to_basis_index(state_label_alice)]
+            bob_state = coup_ham.basis_states[coup_ham.ket_to_basis_index(state_label_bob)]
+
+            # Find the state in the uncoupled modes
+            alice_overlap_idxs, alice_overlaps = floquet_class_uncoup.find_max_overlap_indices(
+                alice_state, return_args_uncoup['modes'][idx], return_overlaps=True
+            )
+            alice_driven_uncoupled_state = return_args_uncoup['modes'][idx][alice_overlap_idxs[0]]
+
+            bob_overlap_idxs, bob_overlaps = floquet_class_uncoup.find_max_overlap_indices(
+                bob_state, return_args_uncoup['modes'][idx], return_overlaps=True
+            )
+            bob_driven_uncoupled_state = return_args_uncoup['modes'][idx][bob_overlap_idxs[0]]
+
+            
+
+            # All states 
+            plus_driven_uncoupled_state = (alice_driven_uncoupled_state + bob_driven_uncoupled_state) / np.sqrt(2)
+            minus_driven_uncoupled_state = (alice_driven_uncoupled_state - bob_driven_uncoupled_state) / np.sqrt(2)
+            plus_dressed_state = (alice_state + bob_state) / np.sqrt(2)
+            minus_dressed_state = (alice_state - bob_state) / np.sqrt(2)
+            
+            # PLUS 
+            # Find the states in driven coupled modes closest to the uncoupled plus state
+            plus_overlap_idxs_coup, plus_overlaps_coup = floquet_class_coup.find_max_overlap_indices(
+                plus_driven_uncoupled_state, return_args_coup['modes'][idx], return_overlaps=True
+            )
+            plus_overlaps_coup_with_uncoupled.append(plus_overlaps_coup[0])
+            plus_energies_coup_with_uncoupled.append(return_args_coup['energies'][idx][plus_overlap_idxs_coup[0]])
+
+            # Find the states in driven coupled modes closest to the dressed plus state
+            
+            plus_overlap_idxs_dressed, plus_overlaps_dressed = floquet_class_coup.find_max_overlap_indices(
+                plus_dressed_state, return_args_coup['modes'][idx], return_overlaps=True
+            )
+            plus_overlaps_coup_with_dressed.append(plus_overlaps_dressed[0])
+            plus_energies_coup_with_dressed.append(return_args_coup['energies'][idx][plus_overlap_idxs_dressed[0]])
+
+            # Minus state
+
+            # Find the states in driven coupled modes closest to the uncoupled minus state
+            minus_overlap_idxs_coup, minus_overlaps_coup = floquet_class_coup.find_max_overlap_indices(
+                minus_driven_uncoupled_state, return_args_coup['modes'][idx], return_overlaps=True
+            )
+                
+            minus_overlaps_coup_with_uncoupled.append(minus_overlaps_coup[0])
+            minus_energies_coup_with_uncoupled.append(return_args_coup['energies'][idx][minus_overlap_idxs_coup[0]])
+
+            # Find the states in driven coupled modes closest to the dressed minus state
+            minus_overlap_idxs_dressed, minus_overlaps_dressed = floquet_class_coup.find_max_overlap_indices(
+                minus_dressed_state, return_args_coup['modes'][idx], return_overlaps=True
+            )
+            minus_overlaps_coup_with_dressed.append(minus_overlaps_dressed[0])
+            minus_energies_coup_with_dressed.append(return_args_coup['energies'][idx][minus_overlap_idxs_dressed[0]])
+            
+
+        return_dict = {
+            'plus_overlaps_coup_with_uncoupled': plus_overlaps_coup_with_uncoupled,
+            'plus_energies_coup_with_uncoupled': plus_energies_coup_with_uncoupled,
+            'plus_overlaps_coup_with_dressed': plus_overlaps_coup_with_dressed,
+            'plus_energies_coup_with_dressed': plus_energies_coup_with_dressed,
+            'minus_overlaps_coup_with_uncoupled': minus_overlaps_coup_with_uncoupled,
+            'minus_energies_coup_with_uncoupled': minus_energies_coup_with_uncoupled,
+            'minus_overlaps_coup_with_dressed': minus_overlaps_coup_with_dressed,
+            'minus_energies_coup_with_dressed': minus_energies_coup_with_dressed
+        }
+        return return_dict
+    
+    def plot_plus_minus_overlaps_and_energies(self, return_args_coup, return_args_uncoup, plus_minus_results, min_idx):
+        """
+        Plot energies and overlaps for plus and minus states with uncoupled and dressed states.
+
+        Parameters
+        ----------
+        return_args_coup : dict
+            Dictionary containing 'frequencies' (array of drive frequencies) for the coupled system.
+        return_args_uncoup : dict
+            Dictionary containing 'frequencies' (array of drive frequencies) for the uncoupled system.
+        plus_minus_results : dict
+            Dictionary with keys:
+                'plus_energies_coup_with_uncoupled', 'plus_energies_coup_with_dressed',
+                'minus_energies_coup_with_uncoupled', 'minus_energies_coup_with_dressed',
+                'plus_overlaps_coup_with_uncoupled', 'plus_overlaps_coup_with_dressed',
+                'minus_overlaps_coup_with_uncoupled', 'minus_overlaps_coup_with_dressed'
+        min_idx : int
+            Index of the minimum overlap (for annotation).
+        """
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+
+        # Plot energies
+        ax1.plot(return_args_coup['frequencies'] / 2 / np.pi, np.array(plus_minus_results['plus_energies_coup_with_uncoupled']) / 2 / np.pi, 'o-', label='Plus Energies with Uncoupled States')
+        ax1.plot(return_args_coup['frequencies'] / 2 / np.pi, np.array(plus_minus_results['plus_energies_coup_with_dressed']) / 2 / np.pi, 'o-', label='Plus Energies with Dressed States')
+        ax1.plot(return_args_coup['frequencies'] / 2 / np.pi, np.array(plus_minus_results['minus_energies_coup_with_uncoupled']) / 2 / np.pi, 'o-', label='Minus Energies with Uncoupled States')
+        ax1.plot(return_args_coup['frequencies'] / 2 / np.pi, np.array(plus_minus_results['minus_energies_coup_with_dressed']) / 2 / np.pi, 'o-', label='Minus Energies with Dressed States')
+
+        # In the uncoupled case, plot the energy difference between plus and minus states
+        differences = np.array(plus_minus_results['plus_energies_coup_with_uncoupled']) / 2 / np.pi - np.array(plus_minus_results['minus_energies_coup_with_uncoupled']) / 2 / np.pi
+        ax1.plot(return_args_uncoup['frequencies'] / 2 / np.pi, differences, 'o--', label='Energy Difference (Uncoupled States)')
+        # Draw a vertical line at min_idx and annotate the energy difference at that point
+        min_freq = return_args_coup['frequencies'][min_idx] / 2 / np.pi
+        energy_diff_at_min = differences[min_idx]
+        ax1.axvline(min_freq, color='k', linestyle='--', label=f'Min Diff: {energy_diff_at_min:.2f} MHz')
+        ax1.set_xlabel('Drive Frequency (MHz)')
+        ax1.set_ylabel('Energy (MHz)')
+        ax1.legend()
+        ax1.grid()
+
+        # Plot overlaps
+        ax2.plot(return_args_coup['frequencies'] / 2 / np.pi, plus_minus_results['plus_overlaps_coup_with_uncoupled'], 'o-', label='Plus Overlaps with Uncoupled States')
+        ax2.plot(return_args_coup['frequencies'] / 2 / np.pi, plus_minus_results['plus_overlaps_coup_with_dressed'], 'o-', label='Plus Overlaps with Dressed States')
+        ax2.plot(return_args_coup['frequencies'] / 2 / np.pi, plus_minus_results['minus_overlaps_coup_with_uncoupled'], 'o-', label='Minus Overlaps with Uncoupled States')
+        ax2.plot(return_args_coup['frequencies'] / 2 / np.pi, plus_minus_results['minus_overlaps_coup_with_dressed'], 'o-', label='Minus Overlaps with Dressed States')
+        ax2.set_xlabel('Drive Frequency (MHz)')
+        ax2.set_ylabel('Overlap')
+        ax2.legend()
+        ax2.grid()
+
+        plt.tight_layout()
+        plt.show()
+        return energy_diff_at_min
+    # ---------------------End of finding effective g between states---------------------
+
+
+    
+    
