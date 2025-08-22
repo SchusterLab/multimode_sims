@@ -367,10 +367,11 @@ class Chip(sdxf.Block):
             layer = 'GAP'
         else:
             layer = '0'
-        AlphaNumText(drawing, maskid, self.textsize, translate_pt(self.mask_id_loc, offset), layer=layer)
-        AlphaNumText(drawing, chipid, self.textsize, translate_pt(self.chip_id_loc, offset), layer=layer)
-        AlphaNumText(drawing, author, self.textsize,
-                     translate_pt(self.author_loc, offset=(-self.textsize[0] * len(author), 0)), layer=layer)
+        # AlphaNumText(drawing, maskid, self.textsize, translate_pt(self.mask_id_loc, offset), layer=layer)
+        if layer != 'GAP': # i don't want chip label in ebeam
+            AlphaNumText(drawing, chipid, self.textsize, translate_pt(self.chip_id_loc, offset), layer=layer)
+        # AlphaNumText(drawing, author, self.textsize,
+        #              translate_pt(self.author_loc, offset=(-self.textsize[0] * len(author), 0)), layer=layer)
 
     def save(self, fname=None, maskid=None, chipid=None, do_label = True):
         """Saves chip to .dxf, defaults naming file by the chip name, and will also label the chip, if a label is specified"""
