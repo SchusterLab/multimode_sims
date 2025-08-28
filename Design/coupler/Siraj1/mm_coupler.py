@@ -827,11 +827,11 @@ class MultimodeFluxLine(MMChipsBase):
         c = self.structure
         shape = self.shape
 
-        section_length = 940 - 85 + 320 - 120 + 100+25+25+40 # large length/2 (should be roughly the size of low impedance section / size of 1 pad)
-        section1_length = 180 - 70-15
+        section_length = shape['high_imp_horizontal_length_half'] # large length/2 (should be roughly the size of low impedance section / size of 1 pad)
+        section1_length = shape['high_imp_vertical_length'] # small length (should be roughly the size of low impedance section / size of 1 pad)
         c.s2.last = last_point_coord
         c.s2.last_direction = 90
-        radius = 100-10-10
+        radius = shape['high_imp_bend_radius'] # radius of the bends in the high impedance section
         target = shape['length_hi'] # total length of the high impedance section
         sec1 = section1_length
         width = shape['w_hi']
