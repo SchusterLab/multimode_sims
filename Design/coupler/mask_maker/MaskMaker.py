@@ -100,7 +100,7 @@ class WaferMask(sdxf.Drawing):
     """
 
     def __init__(self, name, diameter=50800., flat_angle=90., flat_distance=24100., wafer_padding=2000,
-                 chip_size=(7000., 2000.), dicing_border=200, textsize=(800, 800),
+                 chip_size=(7000., 2000.), dicing_border=200, textsize=(3000, 3000),
                  etchtype=True, wafer_edge=True, dashed_dicing_border=0, ndashes = 1, dice_corner = False,
                  two_layer=False, solid=False, square_arr=False):
         sdxf.Drawing.__init__(self)
@@ -195,7 +195,7 @@ class WaferMask(sdxf.Drawing):
         if self.etchtype:
             ChipBorder(chip, self.dicing_border / 2.)
         if self.dashed_dicing_border > 0:
-            dashlayer = 'GAP' if chip.two_layer else chip.layer
+            dashlayer = 'PIN' if chip.two_layer else chip.layer
             DashedChipBorder(chip, self.dicing_border / 2., dash_length = self.dashed_dicing_border, ndashes = self.ndashes, dice_corner = self.dice_corner, layer=dashlayer)
         if chip.two_layer:
             self.layers.append(sdxf.Layer(name='GAP', color=1))
@@ -215,9 +215,10 @@ class WaferMask(sdxf.Drawing):
             if chip.two_layer:
                 self.append(sdxf.Insert(chip.name + 'GAP', point=p, layer='GAP'))
                 self.append(sdxf.Insert(chip.name + 'PIN', point=p, layer='PIN'))
-            if label:
-                chip.label_chip(self, maskid=self.name, chipid=chip.name + ' ' + str(100 + ii + 1)[-2:],
-                                author=chip.author, offset=p)
+            # if label:
+                # chip.label_chip(self, maskid=self.name, chipid=chip.name ,#+# ' ' + str(100 + ii + 1)[-2:],
+                #                 author=chip.author, offset=p)
+                
             self.num_chips += 1
 
         self.manifest.append({'chip': chip, 'name': chip.name, 'copies': copies, 'short_desc': chip.short_description(),
@@ -363,6 +364,9 @@ class Chip(sdxf.Block):
     def label_chip(self, drawing, maskid, chipid, author, offset=(0, 0)):
         """Labels chip in drawing at locations given by mask_id_loc and chip_id_loc with an optional offset.
         Note that the drawing can be a drawing or a Block including the chip itself"""
+        # if offset is None:
+        #     return None
+        # else:
         if self.two_layer:
             layer = 'GAP'
         else:
@@ -371,7 +375,7 @@ class Chip(sdxf.Block):
         if layer != 'GAP': # i don't want chip label in ebeam
             AlphaNumText(drawing, chipid, self.textsize, translate_pt(self.chip_id_loc, offset), layer=layer)
         # AlphaNumText(drawing, author, self.textsize,
-        #              translate_pt(self.author_loc, offset=(-self.textsize[0] * len(author), 0)), layer=layer)
+        #           translate_pt(self.author_loc, offset=(-self.textsize[0] * len(author), 0)), layer=layer)
 
     def save(self, fname=None, maskid=None, chipid=None, do_label = True):
         """Saves chip to .dxf, defaults naming file by the chip name, and will also label the chip, if a label is specified"""
@@ -385,7 +389,7 @@ class Chip(sdxf.Block):
         if self.two_layer:
             d.layers.append(sdxf.Layer(name='GAP', color=1))
             d.layers.append(sdxf.Layer(name='PIN', color=3))
-            self.label_chip(self.gap_layer, maskid, chipid, self.author)
+            # self.label_chip(self.gap_layer, maskid, chipid, self.author)
             d.blocks.append(self.gap_layer)
             d.append(sdxf.Insert(self.gap_layer.name, point=(0, 0), layer='GAP'))
             d.blocks.append(self.pin_layer)
@@ -395,7 +399,8 @@ class Chip(sdxf.Block):
             print(self.pin_layer.layer)
         else:
             if do_label:
-                self.label_chip(self, maskid, chipid, self.author)
+                # self.label_chip(self, maskid, chipid = '', author = self.author)
+                pass
             else:
                 pass
 
