@@ -1,0 +1,10 @@
+
+Multimode 
+1. Shorten 1000, should create stop band edge at 3.8 ghz. Let's see if exp mateches with hfss
+   (whether 3.8 is within or not stop band)
+2. Flux loop distance changed from 8 um to 6 um (as in last fab round of 2024)
+3. Chip name in test structures
+4. Dicing Lanes 
+5. alignment marks NOT changed to crosses. need to know dimensions 
+6. can only fit an open test structure in qubit
+
