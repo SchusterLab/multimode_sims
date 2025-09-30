@@ -1,0 +1,82 @@
+Mask:	DRAVIDQUBITS	Total Chips:	10
+ID	Copies	Short Description	Chip Type	Chip Info
+A	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+B	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+D	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+E	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+F	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+G	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+H	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+I	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+J	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+______________________
+A	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+B	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+D	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+E	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+F	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+G	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+H	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+I	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+J	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+

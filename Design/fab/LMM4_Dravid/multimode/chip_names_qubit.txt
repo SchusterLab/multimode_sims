@@ -1,0 +1,10 @@
+C:\Users\eeshg\Documents\multimode_sims\Design\fab\LMM4_Dravid\designs_dxf\DRAVIDQUBITS_OPT-A.dxf
+C:\Users\eeshg\Documents\multimode_sims\Design\fab\LMM4_Dravid\designs_dxf\DRAVIDQUBITS_OPT-B.dxf
+C:\Users\eeshg\Documents\multimode_sims\Design\fab\LMM4_Dravid\designs_dxf\DRAVIDQUBITS_OPT-C.dxf
+C:\Users\eeshg\Documents\multimode_sims\Design\fab\LMM4_Dravid\designs_dxf\DRAVIDQUBITS_OPT-D.dxf
+C:\Users\eeshg\Documents\multimode_sims\Design\fab\LMM4_Dravid\designs_dxf\DRAVIDQUBITS_OPT-E.dxf
+C:\Users\eeshg\Documents\multimode_sims\Design\fab\LMM4_Dravid\designs_dxf\DRAVIDQUBITS_OPT-F.dxf
+C:\Users\eeshg\Documents\multimode_sims\Design\fab\LMM4_Dravid\designs_dxf\DRAVIDQUBITS_OPT-G.dxf
+C:\Users\eeshg\Documents\multimode_sims\Design\fab\LMM4_Dravid\designs_dxf\DRAVIDQUBITS_OPT-H.dxf
+C:\Users\eeshg\Documents\multimode_sims\Design\fab\LMM4_Dravid\designs_dxf\DRAVIDQUBITS_OPT-I.dxf
+C:\Users\eeshg\Documents\multimode_sims\Design\fab\LMM4_Dravid\designs_dxf\DRAVIDQUBITS_OPT-J.dxf
