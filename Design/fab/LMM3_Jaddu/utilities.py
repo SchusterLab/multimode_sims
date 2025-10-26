@@ -70,3 +70,29 @@ def add_dxf_chip_to_wafer_junc(wafer, dxf_filename, path, chip_width, idx, gap_l
         wafer << copied_gap.move((x_pos, y_pos))
         wafer << copied_pin.move((x_pos, y_pos))
     return wafer, copied_gap, copied_pin
+
+# for multimode qubit 
+# inverts qubit and add bounding box for laser dicing
+def add_qubit_bbox_and_negative_mask(wafer, qubit_chip_obj, qubit_chip_width, idx, xpos_offset, ypos_offset):
+    qubit_length = 16550  # Example length for qubit chip, adjust as needed
+    test_structure_length_down = 9850
+    test_structure_length_up = 2100
+
+    xpos = xpos_offset + (idx * qubit_chip_width)
+    ypos = ypos_offset
+
+    # qubit_bbox = pg.rectangle(size=(qubit_chip_width, qubit_length), layer=13)
+    # wafer << qubit_bbox.move((xpos -200, ypos-200  + test_structure_length_down))
+    qubit_bbox = pg.rectangle(size=(qubit_chip_width, qubit_length + test_structure_length_down - 250), layer=13)
+    wafer << qubit_bbox.move((xpos -200, ypos-200+100))
+    # test_structure_bbox = pg.rectangle(size=(qubit_chip_width, test_structure_length_down), layer=13)
+    # wafer << test_structure_bbox.move((xpos - 200, ypos - 200))
+
+    qubit_chip_bbox = pg.rectangle(size=(qubit_chip_width, qubit_length + test_structure_length_down + test_structure_length_up), layer=14)
+    qubit_chip_bbox.move((-200, -200))
+
+    qubit_negative = pg.boolean(A=qubit_chip_bbox, B=qubit_chip_obj, operation='xor', layer=5)
+    wafer << qubit_negative.move((xpos, ypos))
+    # wafer<< qubit_chip_obj.move((xpos, ypos))
+
+    return wafer, qubit_negative, qubit_bbox

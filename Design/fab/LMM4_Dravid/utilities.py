@@ -6,7 +6,8 @@ import os
 import numpy as np
 
 def add_dxf_chip_to_wafer(wafer, dxf_filename, path, chip_width = 0, idx= 0, layer_in=0, 
-                          layer_out=5, x_offset=0, y_offset=0, add_bool = True):
+                          layer_out=5, x_offset=0, y_offset=0, add_bool = True, 
+                          cell_name = None):
     """
     Imports a? GDS file converted from a DXF filename, copies a layer, and places it on the wafer.
     Args:
@@ -24,7 +25,7 @@ def add_dxf_chip_to_wafer(wafer, dxf_filename, path, chip_width = 0, idx= 0, lay
     gds_filename = dxf_filename.replace('.dxf', '.gds')
     file_path = os.path.join(path, gds_filename)
     print(f"Importing {file_path}")
-    imported = pg.import_gds(file_path)
+    imported = pg.import_gds(file_path, cellname=cell_name)
     copied = pg.copy_layer(imported, layer=layer_in, new_layer=layer_out)
     x_pos = idx * chip_width + x_offset
     y_pos = y_offset
