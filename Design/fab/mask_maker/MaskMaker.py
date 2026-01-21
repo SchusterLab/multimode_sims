@@ -192,16 +192,22 @@ class WaferMask(sdxf.Drawing):
 
     def add_chip(self, chip, copies, label=False, savechip=True, save_folder =None):
         """Adds chip design 'copies' times into mask.  chip must have a unique name as it will be inserted as a block"""
+        
+        
         if self.etchtype:
             ChipBorder(chip, self.dicing_border / 2.)
         if self.dashed_dicing_border > 0:
-            dashlayer = 'PIN' if chip.two_layer else chip.layer
+            dashlayer = 'DICING' if chip.two_layer else chip.layer
             DashedChipBorder(chip, self.dicing_border / 2., dash_length = self.dashed_dicing_border, ndashes = self.ndashes, dice_corner = self.dice_corner, layer=dashlayer)
         if chip.two_layer:
             self.layers.append(sdxf.Layer(name='GAP', color=1))
             self.layers.append(sdxf.Layer(name='PIN', color=3))
             self.blocks.append(chip.gap_layer)
             self.blocks.append(chip.pin_layer)
+
+            self.layers.append(sdxf.Layer(name='DICING', color=4)) # Added by Eesh
+            self.blocks.append(chip.dicing_layer)
+
         if chip not in self.blocks:
             self.blocks.append(chip)
         slots_remaining = self.chip_points.__len__() - self.current_point
@@ -330,6 +336,9 @@ class Chip(sdxf.Block):
                                   textsize, layer='GAP', solid=solid)
             self.pin_layer = Chip(name + "PIN", size, mask_id_loc, chip_id_loc,
                                   textsize, layer='PIN', solid=solid)
+        # added by eesh
+            self.dicing_layer = Chip(name + "DICING", size, mask_id_loc, chip_id_loc,
+                                    textsize, layer='DICING', solid=solid)
         #else:    
         if layer:
             sdxf.Block.__init__(self, name, layer=layer)
@@ -391,14 +400,19 @@ class Chip(sdxf.Block):
         if self.two_layer:
             d.layers.append(sdxf.Layer(name='GAP', color=1))
             d.layers.append(sdxf.Layer(name='PIN', color=3))
+            d.layers.append(sdxf.Layer(name='DICING', color=4)) # Added by Eesh
             # self.label_chip(self.gap_layer, maskid, chipid, self.author)
             d.blocks.append(self.gap_layer)
             d.append(sdxf.Insert(self.gap_layer.name, point=(0, 0), layer='GAP'))
             d.blocks.append(self.pin_layer)
             d.append(sdxf.Insert(self.pin_layer.name, point=(0, 0), layer='PIN'))
+
+            d.blocks.append(self.dicing_layer)
+            d.append(sdxf.Insert(self.dicing_layer.name, point=(0, 0), layer='DICING'))
             print(d.layers)
             print(self.gap_layer.layer)
             print(self.pin_layer.layer)
+            print(self.dicing_layer.layer)
         else:
             if do_label:
                 # self.label_chip(self, maskid, chipid = '', author = self.author)
@@ -436,6 +450,8 @@ class Structure(object):
                                        1, defaults)
             self.pin_layer = Structure(chip.pin_layer, start, direction, 'PIN',
                                        2, defaults)
+            self.dicing_layer = Structure(chip.dicing_layer, start, direction, 'DICING',
+                                        3, defaults)
         self.chip = chip
         self.start = start
         self.last = start
@@ -477,9 +493,11 @@ class Structure(object):
             if name is "last":
                 self.gap_layer.last = value
                 self.pin_layer.last = value
+                self.dicing_layer.last = value
             if name is "last_direction":
                 self.gap_layer.last_direction = value
                 self.pin_layer.last_direction = value
+                self.dicing_layer.last_direction = value
         object.__setattr__(self, name, value)
 
 
@@ -2053,6 +2071,7 @@ class ChipBorder(Structure):
 
     def __init__(self, chip, border_thickness, layer="border", color=1):
         Structure.__init__(self, chip, layer=layer, color=color)
+        # self.dicing_layer = 6
 
         chip_size = (chip.size[0] + 2 * border_thickness, chip.size[1] + 2 * border_thickness)
 

@@ -37,7 +37,9 @@ def add_dxf_chip_to_wafer(wafer, dxf_filename, path, chip_width = 0, idx= 0, lay
 
 
 def add_dxf_chip_to_wafer_junc(wafer, dxf_filename, path, chip_width, idx, gap_layer_in=np.int64(2), pin_layer_in=np.int64(3),
-                          gap_layer_out=2, pin_layer_out = 3,  x_offset=0, y_offset=0, add_bool = True):
+                               dicing_layer_in=np.int64(4),
+                          gap_layer_out=2, pin_layer_out = 3, dicing_layer_out=4,
+                            x_offset=0, y_offset=0, add_bool = True):
     """
     Imports a? GDS file converted from a DXF filename, copies a layer, and places it on the wafer.
     Args:
@@ -61,6 +63,7 @@ def add_dxf_chip_to_wafer_junc(wafer, dxf_filename, path, chip_width, idx, gap_l
     copied_gap = pg.copy_layer(imported, layer=gap_layer_in, new_layer=gap_layer_out)
     # copied = pg.copy_layer(copied, layer=pin_layer_in, new_layer=pin_layer_out)
     copied_pin = pg.copy_layer(imported, layer=pin_layer_in, new_layer=pin_layer_out)
+    copied_dicing = pg.copy_layer(imported, layer=dicing_layer_in, new_layer=dicing_layer_out)
     
     x_pos = idx * chip_width + x_offset
     y_pos = y_offset
@@ -70,7 +73,9 @@ def add_dxf_chip_to_wafer_junc(wafer, dxf_filename, path, chip_width, idx, gap_l
         # wafer << copied.move((x_pos, y_pos))
         wafer << copied_gap.move((x_pos, y_pos))
         wafer << copied_pin.move((x_pos, y_pos))
-    return wafer, copied_gap, copied_pin
+        wafer << copied_dicing.move((x_pos, y_pos))
+    print('returning dcing layer too')
+    return wafer, copied_gap, copied_pin, copied_dicing
 
 # for multimode qubit 
 # inverts qubit and add bounding box for laser dicing
