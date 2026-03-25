@@ -1,0 +1,3 @@
+Junctions: 
+1. short, open set for each coupler and qubit chip (multimode)
+2. dicing lanes need to be full cut

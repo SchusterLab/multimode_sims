@@ -1,0 +1,4 @@
+Optical: 
+1. All chips: dicing lanes (code needs to be changed a bit, at some points its not drawing crosses correctly)
+2. MM Qubits: moved chip center by 350 down/left so coupling to readout and qubit location is same as old design. extended man pad by 250 um, compared to old.
+   So compared to LMM4/3, qubit shifted away 350 from man, pad-chip end distance around manipulate increased by 500, man pad length reduces by 150 um

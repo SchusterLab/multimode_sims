@@ -1,6 +1,0 @@
-1. Qubit junctions normal dolan (no bowtie)
-2. Qubit man pad is 400 micron longer 
-3. Qubit Junction is shifted 50 micron near man
-4. Coupler last pad to flux loop is rounded 
-5. Added ebeam markers all around wafer 
-6. Now 25 qubit chips instea of 10 

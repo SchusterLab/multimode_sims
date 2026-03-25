@@ -1,3 +1,0 @@
-C:\Users\eeshg\Documents\multimode_sims\Design\coupler\LMM3_Jaddu\designs_dxf\JADDU_COUPLER_JUNC-A.dxf
-C:\Users\eeshg\Documents\multimode_sims\Design\coupler\LMM3_Jaddu\designs_dxf\JADDU_COUPLER_JUNC-B.dxf
-C:\Users\eeshg\Documents\multimode_sims\Design\coupler\LMM3_Jaddu\designs_dxf\JADDU_COUPLER_JUNC-C.dxf

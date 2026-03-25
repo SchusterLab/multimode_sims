@@ -1,0 +1,106 @@
+Mask:	TESTINGQUBIT	Total Chips:	13
+ID	Copies	Short Description	Chip Type	Chip Info
+C1A	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1B	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1C	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1D	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1E	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1F	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1G	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1H	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1I	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1J	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1K	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1L	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+C1M	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+______________________
+C1A	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1B	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1C	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1D	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1E	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1F	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1G	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1H	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1I	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1J	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1K	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1L	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
+______________________
+C1M	1	Chip is a class which contains structures
+       Perhaps it will also be used to do some error checking
+    
+
